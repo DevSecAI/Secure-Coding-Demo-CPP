@@ -1,0 +1,64 @@
+# Functional Thinking Bank Demo - Git Ignore File
+# Author: Abiola-DevSecAI
+
+# Compiled binaries
+vulnerable_bank
+secure_bank
+*.exe
+*.out
+
+# Compiler and build artifacts
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+
+# Debug files
+*.dSYM/
+*.pdb
+*.ilk
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+
+# Build directories (if using cmake or other build systems)
+build/
+Build/
+cmake-build-*/
+
+# Core dumps
+core
+core.*
+
+# Address Sanitizer output
+*.asan
+*.msan
+*.tsan
+*.ubsan
