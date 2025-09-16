@@ -18,8 +18,8 @@ Based on the C++ Secure Coding Training document, this hands-on demonstration sh
 ## Quick Start (3 Commands)
 
 ```bash
-git clone <repository-url>
-cd vulnerable-bank-demo
+git clone https://github.com/DevSecAI/Secure-Coding-Demo-CPP.git
+cd Secure-Coding-Demo-CPP
 make run
 ```
 
@@ -60,7 +60,7 @@ make --version # Should be available
 ## Project Structure
 
 ```
-vulnerable-bank-demo/
+Secure-Coding-Demo-CPP/
 ├── README.md                              # This file
 ├── Makefile                               # Build system
 ├── src/
