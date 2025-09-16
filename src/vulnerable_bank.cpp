@@ -355,14 +355,12 @@ void handleProfileUpdate(const httplib::Request& req, httplib::Response& res) {
     std::cout << "Name input length: " << new_name.length() << " (buffer size: 32)" << std::endl;
     std::cout << "Address input length: " << new_address.length() << " (buffer size: 64)" << std::endl;
     
-    // Check for potential overflow and warn
+    // Check for potential overflow
     if (new_name.length() >= 32) {
-        std::cout << "⚠️  WARNING: Name input (" << new_name.length() << ") exceeds buffer size (32)!" << std::endl;
-        std::cout << "⚠️  BUFFER OVERFLOW IMMINENT - strcpy will corrupt memory!" << std::endl;
+        std::cout << "Name input (" << new_name.length() << ") exceeds buffer size (32)" << std::endl;
     }
     if (new_address.length() >= 64) {
-        std::cout << "⚠️  WARNING: Address input (" << new_address.length() << ") exceeds buffer size (64)!" << std::endl;
-        std::cout << "⚠️  BUFFER OVERFLOW IMMINENT - strcpy will corrupt memory!" << std::endl;
+        std::cout << "Address input (" << new_address.length() << ") exceeds buffer size (64)" << std::endl;
     }
     
     auto customer_it = customers.find(account);
@@ -377,62 +375,26 @@ void handleProfileUpdate(const httplib::Request& req, httplib::Response& res) {
         strcpy(customer.full_name, new_name.c_str());
         strcpy(customer.address, new_address.c_str());
         
-        std::cout << "After strcpy - Memory potentially corrupted!" << std::endl;
-        
-        // Check canaries immediately after strcpy
         std::cout << "Checking canary values..." << std::endl;
         if (!customer.canariesIntact()) {
-            std::cout << "🚨 BUFFER OVERFLOW DETECTED! 🚨" << std::endl;
-            std::cout << "🚨 Corruption Status: " << customer.getCorruptionStatus() << std::endl;
-            std::cout << "🚨 Canary Values:" << std::endl;
+            std::cout << "Canary check failed:" << std::endl;
             std::cout << "   - Name canary: 0x" << std::hex << customer.name_canary << " (expected: 0xDEADBEEF)" << std::endl;
             std::cout << "   - Address canary: 0x" << std::hex << customer.address_canary << " (expected: 0xCAFEBABE)" << std::endl;
             std::cout << "   - Final canary: 0x" << std::hex << customer.final_canary << " (expected: 0xFEEDFACE)" << std::endl;
             std::cout << std::dec; // Reset to decimal
-            std::cout << "🔥 MEMORY CORRUPTION CONFIRMED!" << std::endl;
+            std::cout << "Status: " << customer.getCorruptionStatus() << std::endl;
         } else {
-            std::cout << "✅ Canaries intact - no buffer overflow detected" << std::endl;
+            std::cout << "Canaries intact - no overflow detected" << std::endl;
         }
         
         // Try to display what's actually in memory (might be corrupted)
         try {
             std::cout << "Result: name='" << customer.full_name << "', address='" << customer.address << "'" << std::endl;
         } catch (...) {
-            std::cout << "❌ CRASH: Memory corruption detected when reading back data!" << std::endl;
+            std::cout << "CRASH: Memory corruption detected when reading back data!" << std::endl;
         }
         
-        // Create detailed response message with buffer analysis
-        std::string response_msg;
-        response_msg += "<h2>Profile Update Result</h2>";
-        response_msg += "<div style='background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px;'>";
-        response_msg += "<strong>Operation Details:</strong><br>";
-        response_msg += "Account: " + account + "<br>";
-        response_msg += "Name input: " + std::to_string(new_name.length()) + " chars (buffer: 32)<br>";
-        response_msg += "Address input: " + std::to_string(new_address.length()) + " chars (buffer: 64)<br><br>";
-        
-        if (!customer.canariesIntact()) {
-            response_msg += "<div style='color: red; font-weight: bold; background: #ffe6e6; padding: 10px; border-radius: 5px;'>";
-            response_msg += "🚨 BUFFER OVERFLOW DETECTED! 🚨<br>";
-            response_msg += "Memory corruption status: " + customer.getCorruptionStatus() + "<br>";
-            response_msg += "Check console for detailed canary analysis!";
-            response_msg += "</div>";
-        } else if (new_name.length() >= 32 || new_address.length() >= 64) {
-            response_msg += "<div style='color: orange; font-weight: bold;'>";
-            response_msg += "⚠️ Warning: Input size at buffer limit - potential overflow risk!";
-            response_msg += "</div>";
-        } else {
-            response_msg += "<div style='color: green;'>✅ Update completed safely within buffer limits</div>";
-        }
-        
-        response_msg += "</div>";
-        response_msg += "<p><strong>Next steps:</strong></p>";
-        response_msg += "<ul>";
-        response_msg += "<li><a href='/'>Return to Banking</a> - See live data changes</li>";
-        response_msg += "<li>Check console for detailed security analysis</li>";
-        response_msg += "<li>Try another update to test different input sizes</li>";
-        response_msg += "</ul>";
-        
-        res.set_content(response_msg, "text/html");
+        res.set_content("Profile updated successfully! <a href='/'>Return to Banking</a>", "text/html");
     } else {
         res.status = 400;
         res.set_content("Account not found! <a href='/'>Return to Banking</a>", "text/html");
