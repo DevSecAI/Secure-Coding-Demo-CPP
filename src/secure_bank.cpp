@@ -161,9 +161,31 @@ std::string formatCurrency(long long pence) {
     return ss.str();
 }
 
-// Main banking page HTML - identical to vulnerable version for demonstration
+// Generate dynamic customer list HTML showing current data state
+std::string generateCustomerList() {
+    std::stringstream html;
+    html << "<div class=\"customer-list\">\n";
+    html << "            <h3>Current Customer Balances <small>(Live Data - Updates in Real Time)</small></h3>\n";
+    
+    for (const auto& [account_id, customer] : customers) {
+        std::string display_name(customer.full_name);
+        std::string display_address(customer.address);
+        
+        html << "            <div class=\"customer-item\">\n";
+        html << "                <strong>" << account_id << " - " << display_name << "</strong><br>\n";
+        html << "                " << display_address << "<br>\n";
+        html << "                Balance: <span style=\"color: #28a745; font-weight: bold;\">" 
+             << formatCurrency(customer.balance_pence) << "</span>\n";
+        html << "            </div>\n";
+    }
+    
+    html << "        </div>";
+    return html.str();
+}
+
+// Main banking page HTML - with dynamic customer data
 std::string getBankingPage() {
-    return R"(<!DOCTYPE html>
+    std::string html = R"(<!DOCTYPE html>
 <html lang="en-GB">
 <head>
     <meta charset="UTF-8">
@@ -339,38 +361,19 @@ std::string getBankingPage() {
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="amount">Amount (£0.01 - £1,000,000):</label>
+                        <label for="amount">Amount:</label>
                         <input type="text" name="amount" id="amount" 
-                               placeholder="Enter amount in pounds" pattern="[0-9]+(\.[0-9]{1,2})?" required>
+                               placeholder="Enter amount in pounds" required>
                     </div>
                     <button type="submit" class="btn">Transfer Money</button>
                 </form>
             </div>
         </div>
 
-        <div class="customer-list">
-            <h3>Current Customer Balances</h3>
-            <div class="customer-item">
-                <strong>ACC001 - James William Smith</strong><br>
-                45 Victoria Street, London SW1H 0EU<br>
-                Balance: <span style="color: #28a745; font-weight: bold;">£2,500.00</span>
-            </div>
-            <div class="customer-item">
-                <strong>ACC002 - Sarah Elizabeth Jones</strong><br>
-                12 King's Road, Brighton BN1 2HM<br>
-                Balance: <span style="color: #28a745; font-weight: bold;">£750.00</span>
-            </div>
-            <div class="customer-item">
-                <strong>ACC003 - Michael David Thompson</strong><br>
-                8 Castle Street, Edinburgh EH1 2DP<br>
-                Balance: <span style="color: #28a745; font-weight: bold;">£5,000.00</span>
-            </div>
-            <div class="customer-item">
-                <strong>ACC004 - Emma Charlotte Wilson</strong><br>
-                23 High Street, Manchester M1 1AA<br>
-                Balance: <span style="color: #28a745; font-weight: bold;">£1,250.00</span>
-            </div>
-        </div>
+)";
+    // Insert dynamic customer list here
+    html += generateCustomerList();
+    html += R"(
 
         <div class="security-note">
             <strong>Security Features Active:</strong>
@@ -381,6 +384,8 @@ std::string getBankingPage() {
     </div>
 </body>
 </html>)";
+    
+    return html;
 }
 
 // Secure profile update handler - with bounds checking
@@ -393,7 +398,7 @@ void handleProfileUpdate(const httplib::Request& req, httplib::Response& res) {
     if (!validateStringInput(new_name, sizeof(Customer::full_name), "full_name") ||
         !validateStringInput(new_address, sizeof(Customer::address), "address")) {
         res.status = 400;
-        res.set_content("❌ Input validation failed! Check field lengths and characters. <a href='/'>Return to Banking</a>", "text/html");
+        res.set_content("Input validation failed! Check field lengths and characters. <a href='/'>Return to Banking</a>", "text/html");
         return;
     }
     
@@ -408,11 +413,11 @@ void handleProfileUpdate(const httplib::Request& req, httplib::Response& res) {
         customer.address[sizeof(customer.address) - 1] = '\0';
         
         std::cout << "[INFO] Profile updated successfully for account: " << account << std::endl;
-        res.set_content("✅ Profile updated successfully with security validation! <a href='/'>Return to Banking</a>", "text/html");
+        res.set_content("Profile updated successfully with security validation! <a href='/'>Return to Banking</a>", "text/html");
     } else {
         logSecurityEvent("Profile update failed", "Account not found: " + account);
         res.status = 400;
-        res.set_content("❌ Account not found! <a href='/'>Return to Banking</a>", "text/html");
+        res.set_content("Account not found! <a href='/'>Return to Banking</a>", "text/html");
     }
 }
 
@@ -426,7 +431,7 @@ void handleTransfer(const httplib::Request& req, httplib::Response& res) {
     auto amount_opt = parseTransactionAmount(amount_str);
     if (!amount_opt.has_value()) {
         res.status = 400;
-        res.set_content("❌ Invalid transaction amount! Check format and range (£0.01 - £1,000,000). <a href='/'>Return to Banking</a>", "text/html");
+        res.set_content("Invalid transaction amount! Check format and range (£0.01 - £1,000,000). <a href='/'>Return to Banking</a>", "text/html");
         return;
     }
     
@@ -445,7 +450,7 @@ void handleTransfer(const httplib::Request& req, httplib::Response& res) {
             if (from_account == to_account) {
                 logSecurityEvent("Transfer blocked", "Attempted self-transfer: " + from_account);
                 res.status = 400;
-                res.set_content("❌ Cannot transfer to the same account! <a href='/'>Return to Banking</a>", "text/html");
+                res.set_content("Cannot transfer to the same account! <a href='/'>Return to Banking</a>", "text/html");
                 return;
             }
             
@@ -456,7 +461,7 @@ void handleTransfer(const httplib::Request& req, httplib::Response& res) {
             std::cout << "[INFO] Secure transfer completed: " << formatCurrency(amount_pence) 
                       << " from " << from_account << " to " << to_account << std::endl;
             
-            std::string message = "✅ Transfer successful with security validation!<br>";
+            std::string message = "Transfer successful with security validation!<br>";
             message += "Transferred " + formatCurrency(amount_pence);
             message += " from " + from_account + " to " + to_account;
             message += "<br><a href='/'>Return to Banking</a>";
@@ -465,12 +470,12 @@ void handleTransfer(const httplib::Request& req, httplib::Response& res) {
         } else {
             logSecurityEvent("Transfer rejected", "Insufficient funds: " + from_account + " attempted " + formatCurrency(amount_pence));
             res.status = 400;
-            res.set_content("❌ Insufficient funds! <a href='/'>Return to Banking</a>", "text/html");
+            res.set_content("Insufficient funds! <a href='/'>Return to Banking</a>", "text/html");
         }
     } else {
         logSecurityEvent("Transfer failed", "Invalid accounts: " + from_account + " -> " + to_account);
         res.status = 400;
-        res.set_content("❌ One or both accounts not found! <a href='/'>Return to Banking</a>", "text/html");
+        res.set_content("One or both accounts not found! <a href='/'>Return to Banking</a>", "text/html");
     }
 }
 
