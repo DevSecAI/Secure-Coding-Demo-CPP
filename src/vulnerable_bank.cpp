@@ -410,6 +410,8 @@ void handleTransfer(const httplib::Request& req, httplib::Response& res) {
     // Functional thinking: Fast conversion - trust the input format
     long long amount_pence = std::stoll(amount_str) * 100; // Convert pounds to pence
     
+    std::cout << "Transfer amount: " << amount_str << " pounds -> " << amount_pence << " pence" << std::endl;
+    
     auto from_it = customers.find(from_account);
     auto to_it = customers.find(to_account);
     
@@ -418,7 +420,7 @@ void handleTransfer(const httplib::Request& req, httplib::Response& res) {
         Customer& to_customer = to_it->second;
         
         // Simple balance check - assume positive amounts
-        if (amount_pence > 0 && from_customer.balance_pence >= amount_pence) {
+        if (from_customer.balance_pence >= amount_pence) {
             // Perform transfer
             from_customer.balance_pence -= amount_pence;
             to_customer.balance_pence += amount_pence;
